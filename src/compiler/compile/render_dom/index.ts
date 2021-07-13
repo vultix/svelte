@@ -505,6 +505,33 @@ export default function dom(
 			}
 		`[0] as ClassDeclaration;
 
+		if (uses_props || uses_rest) {
+			const tmp = b`class Tmp {
+				setAttribute(name, value) {
+					super.setAttribute(name, value);
+					if (!${name}.observedAttributes.includes(name)) {
+						this.$set({[name]: value});
+						@flush();
+					}
+				}
+        removeAttribute(name) {
+					super.removeAttribute(name);
+					if (!${name}.observedAttributes.includes(name)) {
+						this.$set({[name]: null});
+						@flush();
+					}
+				}
+				toggleAttribute(name) {
+				  super.toggleAttribute(name);
+				  if (!${name}.observedAttributes.includes(name)) {
+						this.$set({[name]: this.getAttribute(name)});
+						@flush();
+					}
+				}
+			}`[0] as ClassDeclaration;
+			declaration.body.body.push(...tmp.body.body);
+		}
+
 		if (props.length > 0) {
 			declaration.body.body.push({
 				type: 'MethodDefinition',
